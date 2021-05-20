@@ -72,9 +72,24 @@ public class Controller {
         return storageService.del(key,value);
     }
     @GetMapping("create-table")
-    public String createTable(@RequestParam String key,@RequestParam String tableName, @RequestParam String args ){
-        logger.info(String.format("New CREATE-TABLE request arrived. Key:%s, tableName:%s, args:%s", key,tableName,args));
-        return databaseService.createTable(key,tableName,args);
+    public String createTable(@RequestParam String tableName ){
+        logger.info(String.format("New CREATE-TABLE request arrived. tableName:%s",tableName));
+        return databaseService.createTable(tableName);
+    }
+    @GetMapping("get-db")
+    public String getDb(){
+        logger.info(String.format("New GET-DB request arrived."));
+        return databaseService.getDB();
+    }
+    @GetMapping("get-table")
+    public String getTable(@RequestParam String tableName){
+        logger.info(String.format("New GET-TABLE request arrived. TableName:"+tableName));
+        return databaseService.getTable(tableName).toString();
+    }
+    @GetMapping("insert-table")
+    public String insertTable(@RequestParam String tableName, @RequestParam String key, @RequestParam String val){
+        logger.info(String.format("New INSERT-TABLE request arrived. TableName:%s, Key:%s, Val:%s",tableName,key,val));
+        return databaseService.insertTable(tableName, key, val);
     }
 
 }
