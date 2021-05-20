@@ -2,6 +2,7 @@ package com.kvs.hynamicstore.rest;
 
 
 import com.kvs.hynamicstore.model.Value;
+import com.kvs.hynamicstore.service.DatabaseService;
 import com.kvs.hynamicstore.service.StorageService;
 
 import org.slf4j.Logger;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Hashtable;
 
 @RestController
@@ -20,6 +23,9 @@ public class Controller {
 
     @Autowired
     StorageService storageService;
+
+    @Autowired
+    DatabaseService databaseService;
 
 
     private static Logger logger = LoggerFactory.getLogger(Controller.class);
@@ -31,8 +37,11 @@ public class Controller {
 
     @GetMapping("get")
     public String get(@RequestParam String key){
+        Instant reqArrv = Instant.now();
         logger.info("New GET request arrived. Key:"+key);
-        return storageService.get(key);
+        String res = storageService.get(key);
+        Instant reqProcd = Instant.now();
+        return storageService.get(key)+ " (Response duration:"+ Duration.between(reqArrv, reqProcd).toMillis()+")";
     }
     @GetMapping("getAll")
     public String getAll(){
@@ -62,4 +71,10 @@ public class Controller {
         logger.info(String.format("New DEL request arrived. Key:%s, Value:%s", key,value));
         return storageService.del(key,value);
     }
+    @GetMapping("create-table")
+    public String createTable(@RequestParam String key,@RequestParam String tableName, @RequestParam String args ){
+        logger.info(String.format("New CREATE-TABLE request arrived. Key:%s, tableName:%s, args:%s", key,tableName,args));
+        return databaseService.createTable(key,tableName,args);
+    }
+
 }

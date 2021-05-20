@@ -8,17 +8,19 @@ import java.io.*;
 import java.util.*;
 
 @Service
-public class StorageService {
+public class DatabaseService {
+    private Hashtable<String,Hashtable<String, Hashtable<String, Value>>> dbCache = new Hashtable<>();
 
     private Hashtable<String, Value> cache = new Hashtable<>();
     private FileInputStream in = null;
     private ObjectInputStream ois = null;
     private FileOutputStream out = null;
     private ObjectOutputStream oos = null;
+    private Hashtable<String,Hashtable<String, Hashtable<String, Value>>> tmpDbHashTable;
     private Hashtable<String, Value> tmpHashTable;
-    private File file = new File("kvstore.xml");
+    private File file = new File("db.xml");
 
-    public StorageService() throws IOException {
+    public DatabaseService() throws IOException {
         tmpHashTable = new Hashtable<>();
         if (!file.exists()){
             file.createNewFile();
@@ -26,8 +28,8 @@ public class StorageService {
     }
 
 
-    public Hashtable<String, Value> getCache() {
-        return cache;
+    public Hashtable<String,Hashtable<String, Hashtable<String, Value>>> getDbCache() {
+        return dbCache;
     }
 
     public Hashtable<String, Value> getAll() {
@@ -205,4 +207,8 @@ public class StorageService {
         }
     }
 
+    // Database
+    public String createTable(String key, String tableName, String args) {
+        Hashtable<String, Hashtable<String, Value>> hashtable = new Hashtable<>();
+    }
 }
