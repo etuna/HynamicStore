@@ -87,7 +87,7 @@ public class Controller {
         logger.info(String.format("New GET-TABLE request arrived. TableName:"+tableName));
         String res =  databaseService.getTable(tableName) ;
         Instant reqProcd = Instant.now();
-        return res + "\n\n(Response duration:"+ Duration.between(reqArrv, reqProcd).toMillis()+")";
+        return res + System.lineSeparator() +"(Response duration:"+ Duration.between(reqArrv, reqProcd).toMillis()+")";
     }
     @GetMapping("insert-table")
     public String insertTable(@RequestParam String tableName, @RequestParam String key, @RequestParam String val){
@@ -100,7 +100,7 @@ public class Controller {
         logger.info(String.format("New SELECT-WHERE request arrived. TableName:%s, Key:%s",tableName,key));
         String res = databaseService.selectWhere(tableName, key);
         Instant reqProcd = Instant.now();
-        return res + "\n\n(Response duration:"+ Duration.between(reqArrv, reqProcd).toMillis()+")";
+        return res + System.lineSeparator() +"(Response duration:"+ Duration.between(reqArrv, reqProcd).toMillis()+")";
     }
     @GetMapping("dbcache")
     public String getDbCache(){
