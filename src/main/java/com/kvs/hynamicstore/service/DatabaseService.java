@@ -24,7 +24,7 @@ public class DatabaseService {
 
     public DatabaseService() throws IOException {
         tmpHashTable = new Hashtable<>();
-        if (!file.exists()){
+        if (!file.exists()) {
             file.createNewFile();
         }
     }
@@ -38,13 +38,14 @@ public class DatabaseService {
         int res = doCreateTable(tableName, table);
         if (res == 0) {
             return String.format("Table %s succesfully created.", tableName);
-        } else if(res == -1) {
+        } else if (res == -1) {
             return String.format("Table %s is already available.", tableName);
-        }else {
+        } else {
             return String.format("Error occured. Table: %s ", tableName);
         }
     }
-    public int doCreateTable(String tableName, Table table){
+
+    public int doCreateTable(String tableName, Table table) {
         try {
             in = new FileInputStream(file);
             if (in.getChannel().size() == 0) {
@@ -57,17 +58,17 @@ public class DatabaseService {
             } else {
                 ois = new ObjectInputStream(in);
                 tmpDbHashTable = (Hashtable) ois.readObject();
-                tmpHashTable = tmpDbHashTable.get(tableName);
+                tmpTable = tmpDbHashTable.get(tableName);
                 in.close();
                 ois.close();
-                if(tmpHashTable == null){
+                if (tmpTable == null) {
                     tmpDbHashTable.put(tableName, table);
                     out = new FileOutputStream(file);
                     oos = new ObjectOutputStream(out);
-                    oos.writeObject(tmpHashTable);
+                    oos.writeObject(tmpDbHashTable);
                     oos.close();
                     out.close();
-                }else {
+                } else {
                     return -1;
                 }
             }
@@ -81,18 +82,22 @@ public class DatabaseService {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return 1;
-        }finally {
-            if(tmpDbHashTable != null){
+        } finally {
+            if (tmpDbHashTable != null) {
                 tmpDbHashTable.clear();
             }
-            if(tmpHashTable != null){
+            if (tmpHashTable != null) {
                 tmpHashTable.clear();
             }
         }
         return 0;
     }
 
-    public Hashtable<String, Value> getTable(String tableName){
+    public String getTable(String tableName) {
+        tmpTable = dbCache.get(tableName);
+        if(tmpTable != null){
+            return "[CACHE]   "+tmpTable;
+        }
         try {
             in = new FileInputStream(file);
             if (in.getChannel().size() == 0) {
@@ -103,17 +108,17 @@ public class DatabaseService {
             tmpTable = tmpDbHashTable.get(tableName);
             in.close();
             ois.close();
-            if(tmpTable == null){
+            if (tmpTable == null) {
                 return null;
-            }else {
+            } else {
                 out = new FileOutputStream(file);
                 oos = new ObjectOutputStream(out);
-                tmpTable.setReqCount(tmpTable.getReqCount()+1);
+                tmpTable.setReqCount(tmpTable.getReqCount() + 1);
                 tmpDbHashTable.put(tableName, tmpTable);
                 oos.writeObject(tmpDbHashTable);
                 oos.close();
                 out.close();
-                return tmpTable;
+                return "[DISK]   "+tmpTable;
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -125,7 +130,7 @@ public class DatabaseService {
         return null;
     }
 
-    public String insertTable(String tableName, String key, String val){
+    public String insertTable(String tableName, String key, String val) {
         try {
             in = new FileInputStream(file);
             if (in.getChannel().size() == 0) {
@@ -134,11 +139,11 @@ public class DatabaseService {
             ois = new ObjectInputStream(in);
             tmpDbHashTable = (Hashtable) ois.readObject();
             tmpTable = tmpDbHashTable.get(tableName);
-            if(tmpTable == null){
+            if (tmpTable == null) {
                 return "nul..";
             }
             tmpTable.getTable().put(key, new Value(val, 0));
-            tmpDbHashTable.put(tableName,tmpTable);
+            tmpDbHashTable.put(tableName, tmpTable);
             in.close();
             ois.close();
 
@@ -184,7 +189,7 @@ public class DatabaseService {
         }
     }
 
-    public String getDB(){
+    public String getDB() {
         try {
             in = new FileInputStream(file);
             if (in.getChannel().size() == 0) {
@@ -206,7 +211,7 @@ public class DatabaseService {
     }
 
 
-    public String get(String key){
+    public String get(String key) {
         Value v = dbCache.get(key).getTable().get(key);
         if (v == null) {
             try {
@@ -216,10 +221,10 @@ public class DatabaseService {
                 v = tmpHashTable.get(key);
                 in.close();
                 ois.close();
-                if ( v == null) {
-                    return "Not Found with given Key :"+key;
+                if (v == null) {
+                    return "Not Found with given Key :" + key;
                 } else {
-                    v.setReqCount(v.getReqCount()+1);
+                    v.setReqCount(v.getReqCount() + 1);
                     tmpHashTable.put(key, v);
                     out = new FileOutputStream("kvstore.xml");
                     oos = new ObjectOutputStream(out);
@@ -234,13 +239,13 @@ public class DatabaseService {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
-            }finally {
+            } finally {
                 tmpHashTable.clear();
                 System.gc();
                 syncCache();
             }
         } else {
-            v.setReqCount(v.getReqCount()+1);
+            v.setReqCount(v.getReqCount() + 1);
             tmpHashTable.put(key, v);
             try {
                 out = new FileOutputStream("kvstore.xml");
@@ -257,10 +262,11 @@ public class DatabaseService {
         }
         return v.getVal();
     }
-    public String store(String key, String val){
+
+    public String store(String key, String val) {
         try {
             in = new FileInputStream(file);
-            if (in.getChannel().size() != 0){
+            if (in.getChannel().size() != 0) {
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
                 tmpHashTable.put(key, new Value(val, 0));
@@ -272,7 +278,7 @@ public class DatabaseService {
                 oos.writeObject(tmpHashTable);
                 oos.close();
                 out.close();
-            }else {
+            } else {
                 tmpHashTable.put(key, new Value(val, 0));
                 out = new FileOutputStream(file);
                 oos = new ObjectOutputStream(out);
@@ -295,7 +301,8 @@ public class DatabaseService {
         }
         return "value";
     }
-    public String del(String key, String val){
+
+    public String del(String key, String val) {
         return "value";
     }
 
@@ -303,7 +310,7 @@ public class DatabaseService {
         populateCache();
     }
 
-    public boolean populateCache(){
+    public boolean populateCache() {
         try {
             in = new FileInputStream(file);
             ois = new ObjectInputStream(in);
@@ -319,8 +326,8 @@ public class DatabaseService {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return false;
-        }finally {
-            if(tmpDbHashTable != null){
+        } finally {
+            if (tmpDbHashTable != null) {
                 tmpDbHashTable.clear();
             }
             System.gc();
@@ -328,19 +335,21 @@ public class DatabaseService {
         }
     }
 
-    public void fillCache(Hashtable<String, Table> db){
+    public void fillCache(Hashtable<String, Table> db) {
         ArrayList<Map.Entry<String, Table>> list = new ArrayList<>(db.entrySet());
-        Collections.sort(list, new Comparator<Map.Entry<String, Table>>(){
+        Collections.sort(list, new Comparator<Map.Entry<String, Table>>() {
 
-            public int compare(Map.Entry<String,Table> o1, Map.Entry<String,Table> o2) {
+            public int compare(Map.Entry<String, Table> o1, Map.Entry<String, Table> o2) {
                 return Integer.compare(o2.getValue().getReqCount(), o1.getValue().getReqCount());
-            }});
+            }
+        });
         dbCache.clear();
-        for(int i = 0; i<list.size()/2+1; i++){
-            dbCache.put(list.get(i).getKey(),list.get(i).getValue());
+        for (int i = 0; i < list.size() / 2 + 1; i++) {
+            dbCache.put(list.get(i).getKey(), list.get(i).getValue());
         }
     }
-    public boolean syncCache(){
+
+    public boolean syncCache() {
         try {
             in = new FileInputStream(file);
             ois = new ObjectInputStream(in);
@@ -357,9 +366,56 @@ public class DatabaseService {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return false;
-        }finally {
+        } finally {
             return true;
         }
     }
 
+    public String selectWhere(String tableName, String key) {
+        tmpTable = dbCache.get(tableName);
+        if(tmpTable != null){
+            Value v = tmpTable.getTable().get(key);
+            if (v != null){
+                return "[CACHE]    "+v.toString();
+            }else {
+                try {
+                    in = new FileInputStream(file);
+                    if (in.getChannel().size() == 0) {
+                        return null;
+                    }
+                    ois = new ObjectInputStream(in);
+                    tmpDbHashTable = (Hashtable) ois.readObject();
+                    tmpTable = tmpDbHashTable.get(tableName);
+                    if (tmpTable == null) {
+                        return null;
+                    } else {
+                        v = tmpTable.getTable().get(key);
+                        in.close();
+                        ois.close();
+                        if (v == null) {
+                            return null;
+                        } else {
+                            out = new FileOutputStream(file);
+                            oos = new ObjectOutputStream(out);
+                            v.setReqCount(v.getReqCount()+1);
+                            tmpTable.put(key,v);
+                            tmpTable.setReqCount(tmpTable.getReqCount() + 1);
+                            tmpDbHashTable.put(tableName, tmpTable);
+                            oos.writeObject(tmpDbHashTable);
+                            oos.close();
+                            out.close();
+                            return "[DISK]    "+v.toString();
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
 }
