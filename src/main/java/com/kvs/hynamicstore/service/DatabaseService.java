@@ -5,11 +5,13 @@ import com.kvs.hynamicstore.model.Table;
 import com.kvs.hynamicstore.model.Value;
 import org.apache.http.HttpEntity;
 
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -56,7 +58,7 @@ public class DatabaseService {
         table.setReqCount(0);
         table.setTable(new Hashtable<String, Value>());
         int res = doCreateTable(tableName, table);
-       // syncWithMainDB();
+        syncWithMainDB();
         if (res == 0) {
             return String.format("Table %s succesfully created.", tableName);
         } else if (res == -1) {
@@ -577,8 +579,10 @@ public class DatabaseService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://127.0.0.1:9971/api/synccommit"))
                 .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("db.xml")))
+                //.headers(HttpHeaders.CONTENT_TYPE, "multipart/form-data")
                 .build();
-        java.net.http.HttpResponse res = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofFile(Paths.get("db.xml")));
+
+        java.net.http.HttpResponse res = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
 
     }
 }

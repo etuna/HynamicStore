@@ -18,7 +18,7 @@ public class Startup implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        storageService.start();
+       // storageService.start();
         databaseService.start();
     }
 }
