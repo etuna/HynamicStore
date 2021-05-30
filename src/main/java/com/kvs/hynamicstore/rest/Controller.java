@@ -74,7 +74,7 @@ public class Controller {
         return storageService.del(key,value);
     }
     @GetMapping("create-table")
-    public String createTable(@RequestParam String tableName ){
+    public String createTable(@RequestParam String tableName ) throws IOException, InterruptedException {
         logger.info(String.format("New CREATE-TABLE request arrived. tableName:%s",tableName));
         return databaseService.createTable(tableName);
     }

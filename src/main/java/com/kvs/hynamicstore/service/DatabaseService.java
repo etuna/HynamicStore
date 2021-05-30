@@ -4,21 +4,25 @@ package com.kvs.hynamicstore.service;
 import com.kvs.hynamicstore.model.Table;
 import com.kvs.hynamicstore.model.Value;
 import org.apache.http.HttpEntity;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.hibernate.annotations.common.util.impl.LoggerFactory;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.nio.file.*;
 import java.util.*;
 
 @Service
@@ -46,12 +50,13 @@ public class DatabaseService {
     }
 
     // Database
-    public String createTable(String tableName) {
+    public String createTable(String tableName) throws IOException, InterruptedException {
         Table table = new Table();
         table.setTableName(tableName);
         table.setReqCount(0);
         table.setTable(new Hashtable<String, Value>());
         int res = doCreateTable(tableName, table);
+       // syncWithMainDB();
         if (res == 0) {
             return String.format("Table %s succesfully created.", tableName);
         } else if (res == -1) {
@@ -558,16 +563,23 @@ public class DatabaseService {
         HttpEntity entity =  response.getEntity();
         //FileInputStream is = (FileInputStream) entity.getContent();
         Files.copy(entity.getContent(), Path.of("db.xml"), StandardCopyOption.REPLACE_EXISTING);
-
         logger.info(tmpHashTable);
         uptodate = false;
-       // syncWithMainDBRead(tmpHashTable.toString());
+
         return "OK";
     }
 
-    public void syncWithMainDBRead(String dbcontent) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter("db.xml"));
-        writer.write(dbcontent);
-        writer.close();
+    public void syncWithMainDB() throws IOException, InterruptedException {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        Path file = Paths.get("db.xml");
+        Resource resource = new UrlResource(file.toUri());
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:9971/api/synccommit"))
+                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("db.xml")))
+                .build();
+        java.net.http.HttpResponse res = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofFile(Paths.get("db.xml")));
+
     }
 }
+
