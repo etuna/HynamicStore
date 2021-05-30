@@ -1,6 +1,7 @@
 package com.kvs.hynamicstore.rest;
 
 
+import com.kvs.hynamicstore.model.Table;
 import com.kvs.hynamicstore.model.Value;
 import com.kvs.hynamicstore.service.DatabaseService;
 import com.kvs.hynamicstore.service.StorageService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Hashtable;
@@ -55,7 +57,7 @@ public class Controller {
     @GetMapping("cache")
     public String getCache(){
         logger.info("New CACHE request arrived.");
-        Hashtable<String, Value> cache = storageService.getCache();
+        Hashtable<String, Table> cache = databaseService.getDbCache();
         return cache.toString();
     }
 
@@ -106,6 +108,12 @@ public class Controller {
     public String getDbCache(){
         logger.info(String.format("New DB-CACHE request arrived."));
         return databaseService.getDbCache().toString();
+    }
+
+    @GetMapping("fetchtest")
+    public String fetchtest() throws IOException {
+        logger.info(String.format("New FETCH-TEST request arrived."));
+        return storageService.fetchMainDB();
     }
 
 }

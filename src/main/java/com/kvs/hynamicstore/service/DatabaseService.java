@@ -3,9 +3,22 @@ package com.kvs.hynamicstore.service;
 
 import com.kvs.hynamicstore.model.Table;
 import com.kvs.hynamicstore.model.Value;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.hibernate.annotations.common.util.impl.LoggerFactory;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 @Service
@@ -21,6 +34,9 @@ public class DatabaseService {
     private FileOutputStream out = null;
     private ObjectOutputStream oos = null;
     private File file = new File("db.xml");
+    private boolean uptodate = false;
+    private static org.jboss.logging.Logger logger = LoggerFactory.logger(StorageService.class);
+
 
     public DatabaseService() throws IOException {
         tmpHashTable = new Hashtable<>();
@@ -247,7 +263,12 @@ public class DatabaseService {
                 in.close();
                 ois.close();
                 if (v == null) {
-                    return "Not Found with given Key :" + key;
+                    if(!uptodate){
+                        fetchMainDB();
+                        get(key);
+                    }else {
+                        return "Not Found with given Key :" + key;
+                    }
                 } else {
                     v.setReqCount(v.getReqCount() + 1);
                     tmpHashTable.put(key, v);
@@ -331,7 +352,8 @@ public class DatabaseService {
         return "value";
     }
 
-    public void start() {
+    public void start() throws IOException {
+        fetchMainDB();
         populateCache();
     }
 
@@ -444,7 +466,14 @@ public class DatabaseService {
                         in.close();
                         ois.close();
                         if (v == null) {
-                            return null;
+                            if(!uptodate){
+                                uptodate = true;
+                                fetchMainDB();
+                                return selectWhere(tableName, key);
+                            }else {
+                                return null;
+                            }
+
                         } else {
                             out = new FileOutputStream(file);
                             oos = new ObjectOutputStream(out);
@@ -483,7 +512,13 @@ public class DatabaseService {
                     in.close();
                     ois.close();
                     if (v == null) {
-                        return null;
+                        if (!uptodate){
+                            uptodate = true;
+                            fetchMainDB();
+                            return selectWhere(tableName, key);
+                        }else {
+                            return null;
+                        }
                     } else {
                         out = new FileOutputStream(file);
                         oos = new ObjectOutputStream(out);
@@ -504,8 +539,35 @@ public class DatabaseService {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
+            } finally {
+                uptodate = false;
             }
         }
         return null;
+    }
+
+
+
+    public String fetchMainDB() throws IOException {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+
+        HttpGet request = new HttpGet("http://127.0.0.1:9971/api/syncfetch");
+        HttpResponse response = httpClient.execute(request);
+
+
+        HttpEntity entity =  response.getEntity();
+        //FileInputStream is = (FileInputStream) entity.getContent();
+        Files.copy(entity.getContent(), Path.of("db.xml"), StandardCopyOption.REPLACE_EXISTING);
+
+        logger.info(tmpHashTable);
+        uptodate = false;
+       // syncWithMainDBRead(tmpHashTable.toString());
+        return "OK";
+    }
+
+    public void syncWithMainDBRead(String dbcontent) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter("db.xml"));
+        writer.write(dbcontent);
+        writer.close();
     }
 }

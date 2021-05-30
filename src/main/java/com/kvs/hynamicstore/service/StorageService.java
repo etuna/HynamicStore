@@ -2,6 +2,13 @@ package com.kvs.hynamicstore.service;
 
 
 import com.kvs.hynamicstore.model.Value;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.hibernate.annotations.common.util.impl.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -9,6 +16,7 @@ import java.util.*;
 
 @Service
 public class StorageService {
+    private static org.jboss.logging.Logger logger = LoggerFactory.logger(StorageService.class);
 
     private Hashtable<String, Value> cache = new Hashtable<>();
     private FileInputStream in = null;
@@ -16,7 +24,8 @@ public class StorageService {
     private FileOutputStream out = null;
     private ObjectOutputStream oos = null;
     private Hashtable<String, Value> tmpHashTable;
-    private File file = new File("kvstore.xml");
+    private File file = new File("db.xml");
+    private boolean uptodate = false;
 
     public StorageService() throws IOException {
         tmpHashTable = new Hashtable<>();
@@ -56,18 +65,22 @@ public class StorageService {
         Value v = cache.get(key);
         if (v == null) {
             try {
-                in = new FileInputStream("kvstore.xml");
+                in = new FileInputStream("db.xml");
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
                 v = tmpHashTable.get(key);
                 in.close();
                 ois.close();
                 if ( v == null) {
-                    return "Not Found with given Key :"+key;
+                    if(!uptodate){
+                        fetchUpdate();
+                    }else {
+                        return "Not Found with given Key :"+key;
+                    }
                 } else {
                     v.setReqCount(v.getReqCount()+1);
                     tmpHashTable.put(key, v);
-                    out = new FileOutputStream("kvstore.xml");
+                    out = new FileOutputStream("db.xml");
                     oos = new ObjectOutputStream(out);
                     oos.writeObject(tmpHashTable);
                     oos.close();
@@ -89,7 +102,7 @@ public class StorageService {
             v.setReqCount(v.getReqCount()+1);
             tmpHashTable.put(key, v);
             try {
-                out = new FileOutputStream("kvstore.xml");
+                out = new FileOutputStream("db.xml");
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
@@ -105,7 +118,7 @@ public class StorageService {
     }
     public String store(String key, String val){
         try {
-            in = new FileInputStream("kvstore.xml");
+            in = new FileInputStream("db.xml");
             if (in.getChannel().size() != 0){
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
@@ -113,14 +126,14 @@ public class StorageService {
                 in.close();
                 ois.close();
 
-                out = new FileOutputStream("kvstore.xml");
+                out = new FileOutputStream("db.xml");
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
                 out.close();
             }else {
                 tmpHashTable.put(key, new Value(val, 0));
-                out = new FileOutputStream("kvstore.xml");
+                out = new FileOutputStream("db.xml");
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
@@ -150,7 +163,7 @@ public class StorageService {
     }
     public boolean populateCache(){
         try {
-            in = new FileInputStream("kvstore.xml");
+            in = new FileInputStream("db.xml");
             ois = new ObjectInputStream(in);
             tmpHashTable = (Hashtable) ois.readObject();
             in.close();
@@ -185,7 +198,7 @@ public class StorageService {
     }
     public boolean syncCache(){
         try {
-            in = new FileInputStream("kvstore.xml");
+            in = new FileInputStream("db.xml");
             ois = new ObjectInputStream(in);
             tmpHashTable = (Hashtable) ois.readObject();
             in.close();
@@ -204,5 +217,24 @@ public class StorageService {
             return true;
         }
     }
+
+    private void fetchUpdate() throws IOException {
+        uptodate = true;
+        fetchMainDB();
+    }
+
+
+    public String fetchMainDB() throws IOException {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+
+        HttpGet request = new HttpGet("http://127.0.0.1:9971/api/fetch");
+        CloseableHttpResponse response = httpClient.execute(request);
+
+        HttpEntity entity = response.getEntity();
+        String result = EntityUtils.toString(entity);
+        logger.info(String.format(result));
+        return "OK";
+    }
+
 
 }
