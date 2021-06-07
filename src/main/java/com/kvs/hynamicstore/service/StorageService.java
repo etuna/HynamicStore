@@ -2,6 +2,7 @@ package com.kvs.hynamicstore.service;
 
 
 import com.kvs.hynamicstore.model.Value;
+import com.kvs.hynamicstore.util.Constant;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -24,7 +25,7 @@ public class StorageService {
     private FileOutputStream out = null;
     private ObjectOutputStream oos = null;
     private Hashtable<String, Value> tmpHashTable;
-    private File file = new File("db.xml");
+    private File file = new File(Constant.dbFile);
     private boolean uptodate = false;
 
     public StorageService() throws IOException {
@@ -65,7 +66,7 @@ public class StorageService {
         Value v = cache.get(key);
         if (v == null) {
             try {
-                in = new FileInputStream("db.xml");
+                in = new FileInputStream(Constant.dbFile);
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
                 v = tmpHashTable.get(key);
@@ -80,7 +81,7 @@ public class StorageService {
                 } else {
                     v.setReqCount(v.getReqCount()+1);
                     tmpHashTable.put(key, v);
-                    out = new FileOutputStream("db.xml");
+                    out = new FileOutputStream(Constant.dbFile);
                     oos = new ObjectOutputStream(out);
                     oos.writeObject(tmpHashTable);
                     oos.close();
@@ -102,7 +103,7 @@ public class StorageService {
             v.setReqCount(v.getReqCount()+1);
             tmpHashTable.put(key, v);
             try {
-                out = new FileOutputStream("db.xml");
+                out = new FileOutputStream(Constant.dbFile);
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
@@ -118,7 +119,7 @@ public class StorageService {
     }
     public String store(String key, String val){
         try {
-            in = new FileInputStream("db.xml");
+            in = new FileInputStream(Constant.dbFile);
             if (in.getChannel().size() != 0){
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
@@ -126,14 +127,14 @@ public class StorageService {
                 in.close();
                 ois.close();
 
-                out = new FileOutputStream("db.xml");
+                out = new FileOutputStream(Constant.dbFile);
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
                 out.close();
             }else {
                 tmpHashTable.put(key, new Value(val, 0));
-                out = new FileOutputStream("db.xml");
+                out = new FileOutputStream(Constant.dbFile);
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
@@ -163,7 +164,7 @@ public class StorageService {
     }
     public boolean populateCache(){
         try {
-            in = new FileInputStream("db.xml");
+            in = new FileInputStream(Constant.dbFile);
             ois = new ObjectInputStream(in);
             tmpHashTable = (Hashtable) ois.readObject();
             in.close();
@@ -198,7 +199,7 @@ public class StorageService {
     }
     public boolean syncCache(){
         try {
-            in = new FileInputStream("db.xml");
+            in = new FileInputStream(Constant.dbFile);
             ois = new ObjectInputStream(in);
             tmpHashTable = (Hashtable) ois.readObject();
             in.close();

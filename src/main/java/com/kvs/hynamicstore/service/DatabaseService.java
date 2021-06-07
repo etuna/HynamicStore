@@ -3,6 +3,7 @@ package com.kvs.hynamicstore.service;
 
 import com.kvs.hynamicstore.model.Table;
 import com.kvs.hynamicstore.model.Value;
+import com.kvs.hynamicstore.util.Constant;
 import org.apache.http.HttpEntity;
 
 import org.apache.http.HttpHeaders;
@@ -39,7 +40,7 @@ public class DatabaseService {
     private ObjectInputStream ois = null;
     private FileOutputStream out = null;
     private ObjectOutputStream oos = null;
-    private File file = new File("db.xml");
+    private File file = new File(Constant.dbFile);
     private boolean uptodate = false;
     private static org.jboss.logging.Logger logger = LoggerFactory.logger(StorageService.class);
 
@@ -200,12 +201,15 @@ public class DatabaseService {
             oos.writeObject(tmpDbHashTable);
             oos.close();
             out.close();
+            syncWithMainDB();
             return "Success.";
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
         return "success";
@@ -263,7 +267,7 @@ public class DatabaseService {
         Value v = dbCache.get(key).getTable().get(key);
         if (v == null) {
             try {
-                in = new FileInputStream("kvstore.xml");
+                in = new FileInputStream(Constant.dbFile);
                 ois = new ObjectInputStream(in);
                 tmpHashTable = (Hashtable) ois.readObject();
                 v = tmpHashTable.get(key);
@@ -279,7 +283,7 @@ public class DatabaseService {
                 } else {
                     v.setReqCount(v.getReqCount() + 1);
                     tmpHashTable.put(key, v);
-                    out = new FileOutputStream("kvstore.xml");
+                    out = new FileOutputStream(Constant.dbFile);
                     oos = new ObjectOutputStream(out);
                     oos.writeObject(tmpHashTable);
                     oos.close();
@@ -301,7 +305,7 @@ public class DatabaseService {
             v.setReqCount(v.getReqCount() + 1);
             tmpHashTable.put(key, v);
             try {
-                out = new FileOutputStream("kvstore.xml");
+                out = new FileOutputStream(Constant.dbFile);
                 oos = new ObjectOutputStream(out);
                 oos.writeObject(tmpHashTable);
                 oos.close();
@@ -564,7 +568,7 @@ public class DatabaseService {
 
         HttpEntity entity =  response.getEntity();
         //FileInputStream is = (FileInputStream) entity.getContent();
-        Files.copy(entity.getContent(), Path.of("db.xml"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(entity.getContent(), Path.of(Constant.dbFile), StandardCopyOption.REPLACE_EXISTING);
         logger.info(tmpHashTable);
         uptodate = false;
 
@@ -573,12 +577,12 @@ public class DatabaseService {
 
     public void syncWithMainDB() throws IOException, InterruptedException {
         HttpClient httpClient = HttpClient.newHttpClient();
-        Path file = Paths.get("db.xml");
+        Path file = Paths.get(Constant.dbFile);
         Resource resource = new UrlResource(file.toUri());
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://127.0.0.1:9971/api/synccommit"))
-                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get("db.xml")))
+                .POST(HttpRequest.BodyPublishers.ofFile(Paths.get(Constant.dbFile)))
                 //.headers(HttpHeaders.CONTENT_TYPE, "multipart/form-data")
                 .build();
 
@@ -587,7 +591,7 @@ public class DatabaseService {
     }
 
     public String sync(byte[] file) throws IOException {
-        OutputStream os = new FileOutputStream(new File("db.xml"));
+        OutputStream os = new FileOutputStream(new File(Constant.dbFile));
         os.write(file);
         // Files.copy(file, Path.of("testdb.xml"), StandardCopyOption.REPLACE_EXISTING);
         return "OK";
