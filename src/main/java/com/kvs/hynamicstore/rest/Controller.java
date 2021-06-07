@@ -9,10 +9,8 @@ import com.kvs.hynamicstore.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -114,6 +112,13 @@ public class Controller {
     public String fetchtest() throws IOException {
         logger.info(String.format("New FETCH-TEST request arrived."));
         return storageService.fetchMainDB();
+    }
+
+    @PostMapping(path="sync", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE})
+    public int sync(@RequestBody byte[] file) throws IOException {
+        logger.info(String.format("New SYNC request arrived."));
+        databaseService.sync(file);
+        return 200;
     }
 
 }

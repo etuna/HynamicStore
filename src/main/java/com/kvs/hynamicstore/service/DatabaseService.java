@@ -585,5 +585,12 @@ public class DatabaseService {
         java.net.http.HttpResponse res = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
 
     }
+
+    public String sync(byte[] file) throws IOException {
+        OutputStream os = new FileOutputStream(new File("db.xml"));
+        os.write(file);
+        // Files.copy(file, Path.of("testdb.xml"), StandardCopyOption.REPLACE_EXISTING);
+        return "OK";
+    }
 }
 
